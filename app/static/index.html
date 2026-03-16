@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Emotion Detection — Real-time AI</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+            rel="stylesheet"
+        />
+        <style>
+            :root {
+                --bg: #0a0a0f;
+                --surface: #13131a;
+                --surface2: #1c1c28;
+                --border: #2a2a3d;
+                --accent: #6c63ff;
+                --accent2: #00dc5a;
+                --text: #e8e8f0;
+                --muted: #6b6b8a;
+                --radius: 12px;
+            }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            body {
+                font-family: "Inter", sans-serif;
+                background: var(--bg);
+                color: var(--text);
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /*  Header  */
+            header {
+                padding: 20px 32px;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                background: var(--surface);
+            }
+            .logo {
+                font-size: 1.25rem;
+                font-weight: 700;
+                letter-spacing: -0.5px;
+            }
+            .logo span {
+                color: var(--accent);
+            }
+            #status-badge {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 0.8rem;
+                color: var(--muted);
+            }
+            .dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: var(--muted);
+                transition: background 0.3s;
+            }
+            .dot.connected {
+                background: var(--accent2);
+                box-shadow: 0 0 8px var(--accent2);
+            }
+
+            /*  Main layout  */
+            main {
+                flex: 1;
+                display: grid;
+                grid-template-columns: 1fr 320px;
+                gap: 0;
+            }
+
+            /*  Video pane  */
+            .video-pane {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #050508;
+                padding: 24px;
+            }
+            .canvas-wrap {
+                position: relative;
+                border-radius: var(--radius);
+                overflow: hidden;
+                box-shadow: 0 0 60px rgba(108, 99, 255, 0.15);
+            }
+            #video {
+                display: block;
+                max-width: 100%;
+                border-radius: var(--radius);
+            }
+            #overlay {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                pointer-events: none;
+            }
+            .controls {
+                margin-top: 16px;
+                display: flex;
+                gap: 12px;
+                justify-content: center;
+            }
+            button {
+                padding: 10px 24px;
+                border-radius: 8px;
+                border: none;
+                font-family: inherit;
+                font-size: 0.9rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s;
+            }
+            #btn-start {
+                background: var(--accent);
+                color: white;
+            }
+            #btn-start:hover {
+                background: #7c74ff;
+                transform: translateY(-1px);
+            }
+            #btn-stop {
+                background: var(--surface2);
+                color: var(--text);
+                border: 1px solid var(--border);
+            }
+            #btn-stop:hover {
+                background: var(--border);
+            }
+
+            /*  Sidebar  */
+            .sidebar {
+                background: var(--surface);
+                border-left: 1px solid var(--border);
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 20px;
+                overflow-y: auto;
+            }
+            .sidebar h3 {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
+                color: var(--muted);
+                margin-bottom: 4px;
+            }
+
+            /* Emotion card */
+            .emotion-card {
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                padding: 16px;
+            }
+            .emotion-name {
+                font-size: 1.8rem;
+                font-weight: 700;
+                transition: all 0.3s;
+            }
+            .emotion-sub {
+                font-size: 0.8rem;
+                color: var(--muted);
+                margin-top: 4px;
+            }
+
+            /* Score bars */
+            .score-list {
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .score-item {
+            }
+            .score-label {
+                display: flex;
+                justify-content: space-between;
+                font-size: 0.78rem;
+                margin-bottom: 4px;
+            }
+            .score-label span:last-child {
+                color: var(--muted);
+            }
+            .bar-bg {
+                background: var(--border);
+                border-radius: 4px;
+                height: 6px;
+                overflow: hidden;
+            }
+            .bar-fill {
+                height: 100%;
+                border-radius: 4px;
+                transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+
+            /* Stats */
+            .stats-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+            .stat-box {
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 12px;
+                text-align: center;
+            }
+            .stat-value {
+                font-size: 1.4rem;
+                font-weight: 700;
+                color: var(--accent);
+            }
+            .stat-label {
+                font-size: 0.7rem;
+                color: var(--muted);
+                margin-top: 2px;
+            }
+
+            /* Log */
+            #log-list {
+                list-style: none;
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                max-height: 180px;
+                overflow-y: auto;
+            }
+            #log-list li {
+                font-size: 0.75rem;
+                color: var(--muted);
+                padding: 4px 8px;
+                background: var(--surface2);
+                border-radius: 4px;
+            }
+            #log-list li span {
+                color: var(--accent2);
+                margin-right: 4px;
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div class="logo">Emotion<span>AI</span></div>
+            <div id="status-badge">
+                <div id="dot" class="dot"></div>
+                <span id="status-text">Disconnected</span>
+            </div>
+        </header>
+
+        <main>
+            <!-- Video pane -->
+            <div class="video-pane">
+                <div>
+                    <div class="canvas-wrap">
+                        <video
+                            id="video"
+                            width="640"
+                            height="480"
+                            autoplay
+                            muted
+                            playsinline
+                        ></video>
+                        <canvas id="overlay" width="640" height="480"></canvas>
+                    </div>
+                    <div class="controls">
+                        <button id="btn-start">▶ Start Camera</button>
+                        <button id="btn-stop">■ Stop</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div>
+                    <h3>Dominant Emotion</h3>
+                    <div class="emotion-card">
+                        <div
+                            class="emotion-name"
+                            id="dominant-emotion"
+                            style="color: #6c63ff"
+                        >
+                            —
+                        </div>
+                        <div class="emotion-sub" id="face-count">
+                            No faces detected
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3>Confidence Scores</h3>
+                    <div class="score-list" id="score-list"></div>
+                </div>
+
+                <div>
+                    <h3>Session Stats</h3>
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-frames">0</div>
+                            <div class="stat-label">Frames</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-value" id="stat-detections">0</div>
+                            <div class="stat-label">Detections</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <h3>Event Log</h3>
+                    <ul id="log-list"></ul>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            const EMOTION_COLORS = {
+                happy: "#00DC5A",
+                sad: "#C86432",
+                angry: "#FF3355",
+                surprise: "#00D2FF",
+                fear: "#9600C8",
+                disgust: "#00B482",
+                neutral: "#A0A0A0",
+            }
+
+            const video = document.getElementById("video")
+            const overlay = document.getElementById("overlay")
+            const ctx = overlay.getContext("2d")
+            const dot = document.getElementById("dot")
+            const statusText = document.getElementById("status-text")
+            const domEmo = document.getElementById("dominant-emotion")
+            const faceCount = document.getElementById("face-count")
+            const scoreList = document.getElementById("score-list")
+            const statFrames = document.getElementById("stat-frames")
+            const statDets = document.getElementById("stat-detections")
+            const logList = document.getElementById("log-list")
+
+            let ws = null,
+                stream = null,
+                animId = null
+            let totalFrames = 0,
+                totalDetections = 0
+            let sending = false
+
+            //  WebSocket 
+            function connectWS() {
+                const proto = location.protocol === "https:" ? "wss" : "ws"
+                ws = new WebSocket(`${proto}://${location.host}/ws`)
+                ws.binaryType = "arraybuffer"
+
+                ws.onopen = () => {
+                    dot.classList.add("connected")
+                    statusText.textContent = "Connected"
+                    addLog("system", "WebSocket connected")
+                }
+                ws.onclose = () => {
+                    dot.classList.remove("connected")
+                    statusText.textContent = "Disconnected"
+                    addLog("system", "WebSocket closed")
+                }
+                ws.onerror = () => addLog("error", "WS error")
+                ws.onmessage = e => {
+                    const data = JSON.parse(e.data)
+                    renderResults(data.faces || [])
+                    sending = false
+                }
+            }
+
+            //  Camera 
+            document
+                .getElementById("btn-start")
+                .addEventListener("click", async () => {
+                    try {
+                        stream = await navigator.mediaDevices.getUserMedia({
+                            video: { width: 640, height: 480 },
+                        })
+                        video.srcObject = stream
+                        video.onloadedmetadata = () => {
+                            overlay.width = video.videoWidth
+                            overlay.height = video.videoHeight
+                        }
+                        connectWS()
+                        sendLoop()
+                        addLog("camera", "Camera started")
+                    } catch (err) {
+                        addLog("error", "Camera access denied")
+                    }
+                })
+
+            document
+                .getElementById("btn-stop")
+                .addEventListener("click", () => {
+                    if (stream) {
+                        stream.getTracks().forEach(t => t.stop())
+                        stream = null
+                    }
+                    if (ws) {
+                        ws.close()
+                        ws = null
+                    }
+                    if (animId) {
+                        cancelAnimationFrame(animId)
+                    }
+                    ctx.clearRect(0, 0, overlay.width, overlay.height)
+                    addLog("camera", "Stopped")
+                })
+
+            //  Frame send loop 
+            const captureCanvas = document.createElement("canvas")
+            const capCtx = captureCanvas.getContext("2d")
+
+            function sendLoop() {
+                animId = requestAnimationFrame(sendLoop)
+                totalFrames++
+                statFrames.textContent = totalFrames
+
+                if (
+                    !ws ||
+                    ws.readyState !== WebSocket.OPEN ||
+                    sending ||
+                    video.readyState < 2
+                )
+                    return
+
+                captureCanvas.width = video.videoWidth
+                captureCanvas.height = video.videoHeight
+                capCtx.drawImage(video, 0, 0)
+
+                captureCanvas.toBlob(
+                    blob => {
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            blob.arrayBuffer().then(buf => {
+                                ws.send(buf)
+                                sending = true
+                            })
+                        }
+                    },
+                    "image/jpeg",
+                    0.7
+                )
+            }
+
+            //  Render results 
+            function renderResults(faces) {
+                ctx.clearRect(0, 0, overlay.width, overlay.height)
+
+                if (faces.length === 0) {
+                    faceCount.textContent = "No faces detected"
+                    domEmo.textContent = "—"
+                    domEmo.style.color = "#6c63ff"
+                    scoreList.innerHTML = ""
+                    return
+                }
+
+                totalDetections += faces.length
+                statDets.textContent = totalDetections
+                faceCount.textContent = `${faces.length} face${faces.length > 1 ? "s" : ""} detected`
+
+                faces.forEach((face, i) => {
+                    const [x, y, w, h] = face.box
+                    const color = face.color || "#6c63ff"
+
+                    // Bounding box
+                    ctx.strokeStyle = color
+                    ctx.lineWidth = 2.5
+                    ctx.strokeRect(x, y, w, h)
+
+                    // Corner accents
+                    const cs = 18
+                    ctx.lineWidth = 4
+                    ;[
+                        [x, y, cs, 0, 0, cs],
+                        [x + w, y, -cs, 0, 0, cs],
+                        [x, y + h, cs, 0, 0, -cs],
+                        [x + w, y + h, -cs, 0, 0, -cs],
+                    ].forEach(([px, py, dx1, dy1, dx2, dy2]) => {
+                        ctx.beginPath()
+                        ctx.moveTo(px + dx1, py + dy1)
+                        ctx.lineTo(px, py)
+                        ctx.lineTo(px + dx2, py + dy2)
+                        ctx.stroke()
+                    })
+
+                    // Label
+                    ctx.fillStyle = color
+                    const label = face.emotion
+                    ctx.font = "bold 15px Inter, sans-serif"
+                    const tw = ctx.measureText(label).width
+                    ctx.fillRect(x, y - 28, tw + 16, 24)
+                    ctx.fillStyle = "#fff"
+                    ctx.fillText(label, x + 8, y - 10)
+
+                    // Primary face: update sidebar
+                    if (i === 0) {
+                        domEmo.textContent =
+                            face.emotion.charAt(0).toUpperCase() +
+                            face.emotion.slice(1)
+                        domEmo.style.color = color
+                        renderScores(face.scores)
+                        if (face.emotion !== "neutral")
+                            addLog(face.emotion, face.emotion)
+                    }
+                })
+            }
+
+            function renderScores(scores) {
+                scoreList.innerHTML = ""
+                const sorted = Object.entries(scores).sort(
+                    (a, b) => b[1] - a[1]
+                )
+                sorted.forEach(([emo, val]) => {
+                    const pct = Math.round(val)
+                    const color = EMOTION_COLORS[emo] || "#6c63ff"
+                    scoreList.innerHTML += `
+        <div class="score-item">
+          <div class="score-label"><span>${emo}</span><span>${pct}%</span></div>
+          <div class="bar-bg">
+            <div class="bar-fill" style="width:${pct}%; background:${color}"></div>
+          </div>
+        </div>`
+                })
+            }
+
+            //  Event log 
+            let lastEmo = ""
+            function addLog(type, msg) {
+                if (type === lastEmo) return
+                lastEmo = type
+                const li = document.createElement("li")
+                const t = new Date().toLocaleTimeString()
+                li.innerHTML = `<span>${t}</span>${msg}`
+                logList.prepend(li)
+                if (logList.children.length > 30)
+                    logList.lastElementChild.remove()
+            }
+        </script>
+    </body>
+</html>

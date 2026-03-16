@@ -1,0 +1,76 @@
+version: "3.9"
+
+services:
+    #  FastAPI Application 
+    app:
+        build: .
+        container_name: emotion_api
+        ports:
+            - "8000:8000"
+        environment:
+            - DATABASE_URL=postgresql+asyncpg://emotion_user:emotion_pass@db:5432/emotion_db
+            - SECRET_KEY=${SECRET_KEY:-change-me-in-production}
+            - ENVIRONMENT=production
+            - DEBUG=false
+        depends_on:
+            db:
+                condition: service_healthy
+        restart: unless-stopped
+        volumes:
+            - ./logs:/app/logs
+        networks:
+            - emotion_net
+
+    #  PostgreSQL Database 
+    db:
+        image: postgres:16-alpine
+        container_name: emotion_db
+        environment:
+            POSTGRES_USER: emotion_user
+            POSTGRES_PASSWORD: emotion_pass
+            POSTGRES_DB: emotion_db
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U emotion_user -d emotion_db"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - emotion_net
+
+    #  Prometheus 
+    prometheus:
+        image: prom/prometheus:latest
+        container_name: emotion_prometheus
+        volumes:
+            - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+        ports:
+            - "9090:9090"
+        networks:
+            - emotion_net
+
+    #  Grafana 
+    grafana:
+        image: grafana/grafana:latest
+        container_name: emotion_grafana
+        environment:
+            - GF_SECURITY_ADMIN_PASSWORD=admin
+        ports:
+            - "3001:3000"
+        volumes:
+            - grafana_data:/var/lib/grafana
+        depends_on:
+            - prometheus
+        networks:
+            - emotion_net
+
+volumes:
+    postgres_data:
+    grafana_data:
+
+networks:
+    emotion_net:
+        driver: bridge
