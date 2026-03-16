@@ -2,10 +2,6 @@
 
 > Production-grade DS pipeline: MTCNN + DeepFace + FastAPI + JWT Auth + PostgreSQL
 
-[![CI](https://github.com/yourorg/emotion-detection/actions/workflows/ci.yml/badge.svg)](https://github.com/yourorg/emotion-detection/actions)
-
----
-
 ## ️ Architecture
 
 ```
