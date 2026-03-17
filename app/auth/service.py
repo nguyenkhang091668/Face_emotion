@@ -33,7 +33,7 @@ class AuthService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    #  Register 
+    #  Register
 
     async def register(self, data: UserCreate) -> UserRead:
         # Check email uniqueness
@@ -66,7 +66,7 @@ class AuthService:
         log.info(f"New user registered: {user.email}")
         return UserRead.from_orm_user(user)
 
-    #  Login 
+    #  Login
 
     async def login(self, identifier: str, password: str) -> Token:
         # Find by email or username
@@ -110,7 +110,7 @@ class AuthService:
             expires_in=JWTHandler.access_token_expiry_seconds(),
         )
 
-    #  Refresh 
+    #  Refresh
 
     async def refresh(self, refresh_token_str: str) -> Token:
         # Validate token exists in DB and is not revoked
@@ -122,7 +122,10 @@ class AuthService:
         if not db_token or db_token.revoked:
             raise InvalidRefreshTokenException()
 
-        if db_token.expires_at < datetime.now(tz=timezone.utc):
+        expires_at = db_token.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+        if expires_at < datetime.now(tz=timezone.utc):
             raise InvalidRefreshTokenException()
 
         # Get user
@@ -160,7 +163,7 @@ class AuthService:
             expires_in=JWTHandler.access_token_expiry_seconds(),
         )
 
-    #  Logout 
+    #  Logout
 
     async def logout(self, refresh_token_str: str) -> None:
         result = await self.db.execute(

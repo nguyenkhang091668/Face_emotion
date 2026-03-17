@@ -14,7 +14,9 @@ from passlib.context import CryptContext
 
 from app.core.config import settings
 
-#  Password hashing 
+#  Password hashing
+
+import uuid
 
 
 class PasswordHasher:
@@ -30,7 +32,7 @@ class PasswordHasher:
         return cls._ctx.verify(plain, hashed)
 
 
-#  JWT token handler 
+#  JWT token handler
 
 class JWTHandler:
     ACCESS_TOKEN_TYPE = "access"
@@ -50,6 +52,7 @@ class JWTHandler:
             "type": token_type,
             "iat": now,
             "exp": now + expires_delta,
+            "jti": str(uuid.uuid4()),
         }
         if extra_claims:
             payload.update(extra_claims)

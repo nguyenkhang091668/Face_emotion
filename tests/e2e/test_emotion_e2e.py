@@ -15,7 +15,7 @@ from httpx import AsyncClient
 pytestmark = pytest.mark.asyncio
 
 
-#  Health 
+#  Health
 
 async def test_health_check(client: AsyncClient):
     resp = await client.get("/health")
@@ -36,7 +36,7 @@ async def test_root_serves_html(client: AsyncClient):
     assert "text/html" in resp.headers["content-type"]
 
 
-#  Sessions REST API 
+#  Sessions REST API
 
 async def test_list_sessions_authenticated(client: AsyncClient, auth_headers):
     resp = await client.get("/sessions", headers=auth_headers)
@@ -59,46 +59,55 @@ async def test_get_session_analytics_not_found(client: AsyncClient, auth_headers
     assert resp.status_code == 404
 
 
-#  WebSocket 
+#  WebSocket
 
-async def test_websocket_empty_frame(client: AsyncClient):
+def test_websocket_empty_frame():
     """Sending invalid bytes to /ws should return empty faces, not crash."""
-    async with client.websocket_connect("/ws") as ws:
-        await ws.send_bytes(b"invalid frame data")
-        data = json.loads(await ws.receive_text())
-        assert "faces" in data
-        assert isinstance(data["faces"], list)
+    from fastapi.testclient import TestClient
+    from app.main import app
+    with TestClient(app) as test_client:
+        with test_client.websocket_connect("/ws") as ws:
+            ws.send_bytes(b"invalid frame data")
+            data = json.loads(ws.receive_text())
+            assert "faces" in data
+            assert isinstance(data["faces"], list)
 
 
-async def test_websocket_blank_jpeg(client: AsyncClient):
+def test_websocket_blank_jpeg():
     """Blank JPEG image should be processed without error."""
+    from fastapi.testclient import TestClient
+    from app.main import app
     # Create a small black image encoded as JPEG
     img = np.zeros((100, 100, 3), dtype=np.uint8)
     _, buf = cv2.imencode(".jpg", img)
     raw_bytes = buf.tobytes()
 
-    async with client.websocket_connect("/ws") as ws:
-        await ws.send_bytes(raw_bytes)
-        data = json.loads(await ws.receive_text())
-        assert "faces" in data
-        # Empty image has no faces — that's fine
-        assert isinstance(data["faces"], list)
+    with TestClient(app) as test_client:
+        with test_client.websocket_connect("/ws") as ws:
+            ws.send_bytes(raw_bytes)
+            data = json.loads(ws.receive_text())
+            assert "faces" in data
+            # Empty image has no faces — that's fine
+            assert isinstance(data["faces"], list)
 
 
-async def test_websocket_multiple_frames(client: AsyncClient):
+def test_websocket_multiple_frames():
     """Should handle multiple sequential frames."""
+    from fastapi.testclient import TestClient
+    from app.main import app
     img = np.zeros((100, 100, 3), dtype=np.uint8)
     _, buf = cv2.imencode(".jpg", img)
     raw_bytes = buf.tobytes()
 
-    async with client.websocket_connect("/ws") as ws:
-        for _ in range(3):
-            await ws.send_bytes(raw_bytes)
-            resp = json.loads(await ws.receive_text())
-            assert "faces" in resp
+    with TestClient(app) as test_client:
+        with test_client.websocket_connect("/ws") as ws:
+            for _ in range(3):
+                ws.send_bytes(raw_bytes)
+                resp = json.loads(ws.receive_text())
+                assert "faces" in resp
 
 
-#  Auth complete flow 
+#  Auth complete flow
 
 async def test_full_auth_flow(client: AsyncClient):
     """Register → Login → Get /me → Logout."""
