@@ -38,36 +38,35 @@ Script `picture_dataset.py` không dùng cách dự đoán "nhắm mắt đưa c
 
 3.  **Detector Backend:**
     - Script đánh giá độc lập mô hình với công cụ bắt khuôn mặt (Face Detection). Hiện tại mặc định sử dụng `mtcnn`. Có thể dễ dàng thay đổi sang `opencv` hoặc `ssd` để phù hợp với ngữ cảnh của dataset (cần vùng bao rộng hay hẹp).
-4.  **Classification_report And Plot seaborn:**
-    - Kết quả báo cáo khi chưa giới hạn ngưỡng:
-      precision recall f1-score support
+4.  **Classification_report & Plot seaborn:**
+    - **Kết quả báo cáo khi chưa giới hạn ngưỡng:**
 
-        angry 0.40 0.39 0.39 70
-        disgust 0.94 0.23 0.37 70
-        fear 0.27 0.27 0.27 70
-        happy 0.59 0.80 0.68 70
-        neutral 0.36 0.51 0.43 70
-        sad 0.33 0.44 0.38 70
-        surprise 0.74 0.49 0.59 70
+| Cảm xúc (Emotion) | Precision | Recall | F1-Score | Support |
+| :--- | :---: | :---: | :---: | :---: |
+| angry | 0.40 | 0.39 | 0.39 | 70 |
+| disgust | 0.94 | 0.23 | 0.37 | 70 |
+| fear | 0.27 | 0.27 | 0.27 | 70 |
+| happy | 0.59 | 0.80 | 0.68 | 70 |
+| neutral | 0.36 | 0.51 | 0.43 | 70 |
+| sad | 0.33 | 0.44 | 0.38 | 70 |
+| surprise | 0.74 | 0.49 | 0.59 | 70 |
+| **accuracy** | | | **0.45** | **490** |
+| **macro avg** | 0.52 | 0.45 | 0.44 | 490 |
+| **weighted avg** | 0.52 | 0.45 | 0.44 | 490 |
 
+    - **Mô hình sau khi đã được tinh chỉnh (giới hạn ngưỡng tự tin lớn nhất < 60%):**
 
-        accuracy                           0.45       490
+| Cảm xúc (Emotion) | Precision | Recall | F1-Score | Support |
+| :--- | :---: | :---: | :---: | :---: |
+| Uncertain | 0.00 | 0.00 | 0.00 | 0 |
+| angry | 0.38 | 0.30 | 0.34 | 50 |
+| disgust | 1.00 | 0.20 | 0.33 | 50 |
+| fear | 0.31 | 0.22 | 0.26 | 50 |
+| happy | 0.62 | 0.74 | 0.67 | 50 |
+| neutral | 0.42 | 0.42 | 0.42 | 50 |
+| sad | 0.25 | 0.24 | 0.24 | 50 |
+| surprise | 0.81 | 0.42 | 0.55 | 50 |
+| **accuracy** | | | **0.36** | **350** |
+| **macro avg** | 0.47 | 0.32 | 0.35 | 350 |
+| **weighted avg** | 0.54 | 0.36 | 0.40 | 350 |
 
-    macro avg 0.52 0.45 0.44 490
-    weighted avg 0.52 0.45 0.44 490
-    - Mô Hình đã được tinh tỉnh lại kết cấu đặt ra giới hạn ngưỡng < 60
-      precision recall f1-score support
-
-    Uncertain 0.00 0.00 0.00 0
-    angry 0.38 0.30 0.34 50
-    disgust 1.00 0.20 0.33 50
-    fear 0.31 0.22 0.26 50
-    happy 0.62 0.74 0.67 50
-    neutral 0.42 0.42 0.42 50
-    sad 0.25 0.24 0.24 50
-    surprise 0.81 0.42 0.55 50
-
-        accuracy                           0.36       350
-
-    macro avg 0.47 0.32 0.35 350
-    weighted avg 0.54 0.36 0.40 350
