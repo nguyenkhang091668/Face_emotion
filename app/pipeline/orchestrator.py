@@ -6,7 +6,7 @@ PipelineOrchestrator — composes the full ML pipeline:
   bytes → FramePreprocessor → FaceDetector → FaceTracker → EmotionAnalyzer → output
 Replaces the monolithic EmotionEngine from app/emotion_engine.py.
 """
-
+import time
 import numpy as np
 
 from app.core.config import settings
@@ -14,7 +14,6 @@ from app.pipeline.analyzer import EmotionAnalyzer
 from app.pipeline.detector import FaceDetector
 from app.pipeline.preprocessor import FramePreprocessor
 from app.pipeline.tracker import FaceTracker
-
 
 class PipelineOrchestrator:
     """
@@ -36,7 +35,7 @@ class PipelineOrchestrator:
         self._analyzer = EmotionAnalyzer()
         self._frame_count = 0
 
-    #  Public API 
+    #  Public API
 
     def process_bytes(self, raw_bytes: bytes) -> list[dict]:
         """Full pipeline: decode bytes → process frame."""
@@ -57,12 +56,17 @@ class PipelineOrchestrator:
             }
         """
         self._frame_count += 1
+        time_total_start = time.perf_counter()
 
         # 1. Detect faces
+        time_dect_start = time.perf_counter()
         faces = self._detector.detect(frame_bgr)
+        time_dect_end = time.perf_counter()
 
         # 2. Update tracker
+        time_str_start = time.perf_counter()
         self._tracker.update(faces)
+        time_str_end = time.perf_counter()
 
         # 3. Schedule async emotion analysis every N frames
         analyze_interval = settings.ANALYZE_EVERY_N_FRAMES
@@ -92,8 +96,17 @@ class PipelineOrchestrator:
                 "color":   EmotionAnalyzer.get_color(r["emotion"]),
                 "scores":  top3,
             })
+        time_total_end = time.perf_counter()
+        det_ms = (time_dect_end - time_dect_start) * 1000
+        trk_ms = (time_str_end - time_str_start) * 1000
+        total_ms = (time_total_end - time_total_start) * 1000
+
+        print(f"Frame {self._frame_count:04d} | "
+              f"MTCNN Detect: {det_ms:.1f}ms | Tracker: {trk_ms:.1f}ms | "
+              f"Tổng FPS nhẩm tính: {1000 / total_ms:.1f} FPS")
         return output
 
     @property
     def frame_count(self) -> int:
         return self._frame_count
+

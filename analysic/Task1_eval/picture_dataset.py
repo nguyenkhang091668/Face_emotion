@@ -29,22 +29,18 @@ for emotion_folder in os.listdir(dataset_dir):
             # run deepface#
             result = DeepFace.analyze(image_path,
                                       actions=['emotion'],
-                                      detector_backend='mtcnn',
+                                      detector_backend='retinaface',
                                       enforce_detection=False,
                                       silent=True)
             emotions = result[0]['emotion']
             dominant_emotion = result[0]['dominant_emotion']
-            max_confidence = emotions[dominant_emotion]
-            if max_confidence < 60.0:
-                pred = 'Uncertain'
-            else:
-                pred = dominant_emotion
+            pred = max(emotions, key=emotions.get)
 
             # save#
             y_true.append(emotion_folder)
             y_pred.append(pred)
         except Exception as e:
-            continue
+            print(f"Lỗi ở ảnh{image_path}: {e}")
 
 # print#
 print(classification_report(y_true, y_pred))
